@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Train Meet — direct &amp; one-change UK rail journeys</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>Train Meet</h1>
+  <p class="lede">Pick two UK stations. We'll show you whether a direct train runs,
+     and which stations are reachable directly from both &mdash; your one-change meeting points.</p>
+
+  <form id="form">
+    <div class="combobox" id="from-combo">
+      <label for="from">From</label>
+      <div class="combo-control">
+        <input id="from" type="text" autocomplete="off" required
+               role="combobox" aria-autocomplete="list" aria-expanded="false"
+               aria-controls="from-list" placeholder="e.g. London Kings Cross">
+        <button type="button" class="combo-clear" aria-label="Clear" hidden>×</button>
+      </div>
+      <ul id="from-list" class="combo-list" role="listbox" hidden></ul>
+    </div>
+    <div class="combobox" id="to-combo">
+      <label for="to">To</label>
+      <div class="combo-control">
+        <input id="to" type="text" autocomplete="off" required
+               role="combobox" aria-autocomplete="list" aria-expanded="false"
+               aria-controls="to-list" placeholder="e.g. Edinburgh">
+        <button type="button" class="combo-clear" aria-label="Clear" hidden>×</button>
+      </div>
+      <ul id="to-list" class="combo-list" role="listbox" hidden></ul>
+    </div>
+    <div class="field">
+      <label for="max-changes">Max changes each</label>
+      <select id="max-changes">
+        <option value="0">Direct only</option>
+        <option value="1" selected>Up to 1 change</option>
+        <option value="2">Up to 2 changes</option>
+        <option value="3">Up to 3 changes</option>
+      </select>
+    </div>
+    <button type="submit">Find meeting points</button>
+  </form>
+
+  <section id="results" aria-live="polite"></section>
+
+  <footer>
+    <p><small>Timetable data from National Rail / RDG. Rebuilt weekly.</small></p>
+  </footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

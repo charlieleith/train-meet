@@ -1,0 +1,76 @@
+name: Build timetable data
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # Monday 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up SSH key
+        env:
+          RDG_SSH_KEY: ${{ secrets.RDG_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$RDG_SSH_KEY" > ~/.ssh/rdg_key
+          chmod 600 ~/.ssh/rdg_key
+
+      - name: Download CIF timetable via SFTP
+        env:
+          RDG_HOST: ${{ secrets.RDG_HOST }}
+          RDG_USER: ${{ secrets.RDG_USER }}
+          RDG_REMOTE_DIR: ${{ vars.RDG_REMOTE_DIR }}
+          RDG_FILE_GLOB: ${{ vars.RDG_FILE_GLOB }}   # e.g. "*toc-full*.CIF.gz"
+        run: |
+          mkdir -p data/raw
+          # accept-new trusts the host key on first use and pins it afterwards.
+          sftp -i ~/.ssh/rdg_key \
+               -o StrictHostKeyChecking=accept-new \
+               -o UserKnownHostsFile=~/.ssh/known_hosts \
+               -b - "$RDG_USER@$RDG_HOST" <<EOF
+            cd $RDG_REMOTE_DIR
+            lcd data/raw
+            mget $RDG_FILE_GLOB
+            bye
+          EOF
+          ls -la data/raw
+
+      - name: Unpack archive
+        run: |
+          cd data/raw
+          for f in *.zip;  do [ -f "$f" ] && unzip -o "$f"; done
+          for f in *.gz;   do [ -f "$f" ] && gunzip -kf "$f"; done
+          ls -la
+
+      - name: Parse and build graph
+        run: |
+          CIF=$(find data/raw -maxdepth 1 -iname '*.mca' | head -n1)
+          if [ -z "$CIF" ]; then
+            echo "::error::No .MCA file found after extraction — check RDG_FILE_GLOB"
+            exit 1
+          fi
+          python build/parse_cif.py "$CIF" data/
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/stations.json data/direct_services.json
+          if git diff --cached --quiet; then
+            echo "No changes to timetable graph"
+          else
+            git commit -m "Refresh timetable data"
+            git push
+          fi

@@ -1,0 +1,133 @@
+:root {
+  --fg: #1a1a1a;
+  --muted: #6b6b6b;
+  --accent: #1456a8;
+  --accent-hover: #0e3f7a;
+  --bg: #fafafa;
+  --panel: #ffffff;
+  --border: #e2e2e2;
+  --direct: #1b6a2e;
+  --nodirect: #8a4a00;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  max-width: 42rem;
+  margin: 2rem auto;
+  padding: 0 1rem 3rem;
+  color: var(--fg);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+h1 { margin: 0 0 0.25rem; }
+h2 { margin-top: 2rem; font-size: 1.15rem; }
+h3 { margin: 1.1rem 0 0.35rem; font-size: 0.95rem; font-weight: 600; color: var(--fg); }
+h3 small { font-weight: normal; color: var(--muted); }
+
+.lede { color: var(--muted); margin-top: 0; }
+
+form {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.75rem 0;
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+label { font-size: 0.9rem; color: var(--muted); }
+
+input, button, select {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+}
+
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.field { display: grid; gap: 0.3rem; }
+.field select { background: var(--panel); }
+
+.combobox { position: relative; display: grid; gap: 0.3rem; }
+.combo-control { position: relative; display: flex; }
+.combo-control input { flex: 1; padding-right: 2rem; }
+.combobox.is-selected input {
+  background: #eef4fb;
+  border-color: var(--accent);
+  color: var(--fg);
+  font-weight: 600;
+  cursor: default;
+}
+.combobox.is-selected input:focus { outline-color: var(--accent); }
+
+.combo-clear {
+  position: absolute;
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: 0;
+  padding: 0 0.45rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.combo-clear:hover { color: var(--fg); background: rgba(0,0,0,0.05); }
+
+.combo-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 2px 0 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+.combo-list li {
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--fg);
+}
+.combo-list li .crs { color: var(--muted); font-size: 0.85rem; margin-left: 0.35rem; }
+.combo-list li.hl { background: var(--accent); color: white; }
+.combo-list li.hl .crs { color: rgba(255,255,255,0.85); }
+.combo-list .combo-empty { padding: 0.6rem 0.75rem; color: var(--muted); cursor: default; }
+
+button {
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+  border: 0;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  justify-self: start;
+}
+button:hover { background: var(--accent-hover); }
+
+#results { margin-top: 1rem; }
+
+.direct { color: var(--direct); font-size: 1.05rem; }
+.nodirect { color: var(--nodirect); }
+
+ul { padding-left: 1.25rem; columns: 2; column-gap: 2rem; }
+li { margin: 0.15rem 0; break-inside: avoid; }
+small { color: var(--muted); font-weight: normal; }
+
+footer { margin-top: 3rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 1rem; }
+
+@media (max-width: 480px) {
+  ul { columns: 1; }
+}
