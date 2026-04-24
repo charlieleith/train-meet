@@ -61,13 +61,14 @@ jobs:
             echo "::error::No .MCA file found after extraction — check RDG_FILE_GLOB"
             exit 1
           fi
-          python build/parse_cif.py "$CIF" data/
+          mkdir -p public/data
+          python build/parse_cif.py "$CIF" public/data/
 
       - name: Commit updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/stations.json data/direct_services.json
+          git add public/data/stations.json public/data/direct_services.json
           if git diff --cached --quiet; then
             echo "No changes to timetable graph"
           else
