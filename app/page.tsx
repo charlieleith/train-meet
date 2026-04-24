@@ -1,4 +1,9 @@
-import TrainMeet from "./TrainMeet";
+import TrainMeet, { type Services, type Stations } from "./TrainMeet";
+import servicesJson from "../public/data/direct_services.json";
+import stationsJson from "../public/data/stations.json";
+
+const stations = stationsJson as unknown as Stations;
+const services = servicesJson as unknown as Services;
 
 export default function Page() {
   return (
@@ -9,7 +14,7 @@ export default function Page() {
         and which stations are reachable directly from both — your one-change
         meeting points.
       </p>
-      <TrainMeet />
+      <TrainMeet stations={stations} services={services} />
       <footer>
         <p>
           <small>Timetable data from National Rail / RDG. Rebuilt weekly.</small>
