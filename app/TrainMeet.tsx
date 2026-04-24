@@ -385,11 +385,6 @@ export default function TrainMeet({
     [stations],
   );
 
-  const swap = () => {
-    setFrom(to);
-    setTo(from);
-  };
-
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!from || !to) {
@@ -411,23 +406,14 @@ export default function TrainMeet({
     <>
       <form onSubmit={onSubmit}>
         <Combobox
-          label="From"
+          label="Station A"
           placeholder="e.g. London Kings Cross"
           entries={entries}
           value={from}
           onChange={setFrom}
         />
-        <button
-          type="button"
-          className="swap"
-          onClick={swap}
-          disabled={!from && !to}
-          aria-label="Swap from and to"
-        >
-          ⇅ Swap
-        </button>
         <Combobox
-          label="To"
+          label="Station B"
           placeholder="e.g. Edinburgh"
           entries={entries}
           value={to}
