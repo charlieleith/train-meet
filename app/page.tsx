@@ -10,9 +10,8 @@ export default function Page() {
     <main>
       <h1>Train Meet</h1>
       <p className="lede">
-        Pick two UK stations. We&apos;ll show you whether a direct train runs,
-        and which stations are reachable directly from both — your one-change
-        meeting points.
+        Pick two or more UK stations. We&apos;ll show you the stations reachable
+        within a few changes from all of them — your meeting points.
       </p>
       <TrainMeet stations={stations} services={services} />
       <footer>
