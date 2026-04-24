@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
-type StationInfo = { name: string };
-type Stations = Record<string, StationInfo>;
-type Services = Record<string, string[]>;
+export type StationInfo = { name: string };
+export type Stations = Record<string, StationInfo>;
+export type Services = Record<string, string[]>;
 
 type Entry = {
   crs: string;
@@ -351,11 +351,13 @@ function ResultView({ stations, from, to, maxChanges, result }: ResultViewProps)
   );
 }
 
-export default function TrainMeet() {
-  const [stations, setStations] = useState<Stations>({});
-  const [services, setServices] = useState<Services>({});
-  const [loadError, setLoadError] = useState(false);
-
+export default function TrainMeet({
+  stations,
+  services,
+}: {
+  stations: Stations;
+  services: Services;
+}) {
   const [from, setFrom] = useState<Entry | null>(null);
   const [to, setTo] = useState<Entry | null>(null);
   const [maxChanges, setMaxChanges] = useState(1);
@@ -368,26 +370,6 @@ export default function TrainMeet() {
   } | null>(null);
 
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [s, d] = await Promise.all([
-          fetch("/data/stations.json").then((r) => r.json()),
-          fetch("/data/direct_services.json").then((r) => r.json()),
-        ]);
-        if (cancelled) return;
-        setStations(s);
-        setServices(d);
-      } catch {
-        if (!cancelled) setLoadError(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const entries = useMemo<Entry[]>(
     () =>
@@ -402,6 +384,11 @@ export default function TrainMeet() {
         .sort((a, b) => a.name.localeCompare(b.name)),
     [stations],
   );
+
+  const swap = () => {
+    setFrom(to);
+    setTo(from);
+  };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -420,17 +407,6 @@ export default function TrainMeet() {
     setSubmitted({ from, to, maxChanges, result });
   };
 
-  if (loadError) {
-    return (
-      <section id="results" aria-live="polite">
-        <p>
-          Couldn&apos;t load timetable data. If you&apos;ve just cloned the repo,
-          run the build step first.
-        </p>
-      </section>
-    );
-  }
-
   return (
     <>
       <form onSubmit={onSubmit}>
@@ -441,6 +417,15 @@ export default function TrainMeet() {
           value={from}
           onChange={setFrom}
         />
+        <button
+          type="button"
+          className="swap"
+          onClick={swap}
+          disabled={!from && !to}
+          aria-label="Swap from and to"
+        >
+          ⇅ Swap
+        </button>
         <Combobox
           label="To"
           placeholder="e.g. Edinburgh"
