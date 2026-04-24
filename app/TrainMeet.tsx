@@ -14,7 +14,7 @@ type Entry = {
   words: string[];
 };
 
-type Group = { chA: number; chB: number; arr: string[] };
+type Group = { changes: number[]; arr: string[] };
 type Result = { direct: boolean; groups: Group[] };
 
 const MAX_RESULTS = 6;
@@ -60,40 +60,57 @@ function bfs(services: Services, start: string): Map<string, number> {
 function findMeetingPoints(
   stations: Stations,
   services: Services,
-  from: string,
-  to: string,
+  crses: string[],
   maxChanges: number,
 ): Result {
-  const distA = bfs(services, from);
-  const distB = bfs(services, to);
-  const direct = (services[from] || []).includes(to);
-  const points: { crs: string; chA: number; chB: number }[] = [];
-  for (const [crs, dA] of distA) {
-    if (crs === from || crs === to) continue;
-    const dB = distB.get(crs);
-    if (dB === undefined) continue;
-    const chA = dA - 1;
-    const chB = dB - 1;
-    if (chA > maxChanges || chB > maxChanges) continue;
-    points.push({ crs, chA, chB });
+  const dists = crses.map((c) => bfs(services, c));
+  const inputs = new Set(crses);
+  const direct =
+    crses.length === 2 && (services[crses[0]] || []).includes(crses[1]);
+  const candidates: { crs: string; changes: number[] }[] = [];
+  const smallest = dists.reduce((m, d) => (d.size < m.size ? d : m), dists[0]);
+  for (const [crs] of smallest) {
+    if (inputs.has(crs)) continue;
+    const changes: number[] = [];
+    let ok = true;
+    for (const d of dists) {
+      const dist = d.get(crs);
+      if (dist === undefined) {
+        ok = false;
+        break;
+      }
+      const ch = dist - 1;
+      if (ch > maxChanges) {
+        ok = false;
+        break;
+      }
+      changes.push(ch);
+    }
+    if (ok) candidates.push({ crs, changes });
   }
   const groupMap = new Map<string, Group>();
-  for (const p of points) {
-    const key = `${p.chA},${p.chB}`;
+  for (const c of candidates) {
+    const key = c.changes.join(",");
     let g = groupMap.get(key);
     if (!g) {
-      g = { chA: p.chA, chB: p.chB, arr: [] };
+      g = { changes: c.changes, arr: [] };
       groupMap.set(key, g);
     }
-    g.arr.push(p.crs);
+    g.arr.push(c.crs);
   }
   const groups = [...groupMap.values()];
-  groups.sort(
-    (a, b) =>
-      Math.max(a.chA, a.chB) - Math.max(b.chA, b.chB) ||
-      a.chA + a.chB - (b.chA + b.chB) ||
-      a.chA - b.chA,
-  );
+  groups.sort((a, b) => {
+    const maxA = Math.max(...a.changes);
+    const maxB = Math.max(...b.changes);
+    if (maxA !== maxB) return maxA - maxB;
+    const sumA = a.changes.reduce((s, x) => s + x, 0);
+    const sumB = b.changes.reduce((s, x) => s + x, 0);
+    if (sumA !== sumB) return sumA - sumB;
+    for (let i = 0; i < a.changes.length; i++) {
+      if (a.changes[i] !== b.changes[i]) return a.changes[i] - b.changes[i];
+    }
+    return 0;
+  });
   for (const g of groups) {
     g.arr.sort((x, y) => stations[x].name.localeCompare(stations[y].name));
   }
@@ -296,32 +313,33 @@ function Combobox({ label, placeholder, entries, value, onChange }: ComboProps) 
 
 type ResultViewProps = {
   stations: Stations;
-  from: Entry;
-  to: Entry;
+  inputs: Entry[];
   maxChanges: number;
   result: Result;
 };
 
-function ResultView({ stations, from, to, maxChanges, result }: ResultViewProps) {
+function ResultView({ stations, inputs, maxChanges, result }: ResultViewProps) {
   const total = result.groups.reduce((n, g) => n + g.arr.length, 0);
+  const isPair = inputs.length === 2;
   return (
     <>
-      {result.direct ? (
-        <p className="direct">
-          ✓ Direct trains run between <strong>{from.name}</strong> and{" "}
-          <strong>{to.name}</strong>.
-        </p>
-      ) : (
-        <p className="nodirect">
-          No direct service between <strong>{from.name}</strong> and{" "}
-          <strong>{to.name}</strong>.
-        </p>
-      )}
+      {isPair &&
+        (result.direct ? (
+          <p className="direct">
+            ✓ Direct trains run between <strong>{inputs[0].name}</strong> and{" "}
+            <strong>{inputs[1].name}</strong>.
+          </p>
+        ) : (
+          <p className="nodirect">
+            No direct service between <strong>{inputs[0].name}</strong> and{" "}
+            <strong>{inputs[1].name}</strong>.
+          </p>
+        ))}
       {total === 0 ? (
         <p>
           No meeting points{" "}
           {maxChanges === 0
-            ? "with a direct service from both"
+            ? "with a direct service from all"
             : `within ${changesLabel(maxChanges)} each`}
           .
         </p>
@@ -331,10 +349,12 @@ function ResultView({ stations, from, to, maxChanges, result }: ResultViewProps)
             Meeting points <small>({total})</small>
           </h2>
           {result.groups.map((g) => (
-            <section key={`${g.chA},${g.chB}`}>
+            <section key={g.changes.join(",")}>
               <h3>
-                {from.name} {changesLabel(g.chA)} · {to.name}{" "}
-                {changesLabel(g.chB)} <small>({g.arr.length})</small>
+                {g.changes
+                  .map((ch, i) => `${inputs[i].name} ${changesLabel(ch)}`)
+                  .join(" · ")}{" "}
+                <small>({g.arr.length})</small>
               </h3>
               <ul>
                 {g.arr.map((crs) => (
@@ -351,6 +371,61 @@ function ResultView({ stations, from, to, maxChanges, result }: ResultViewProps)
   );
 }
 
+type Slot = { id: string; value: Entry | null };
+
+function letter(i: number): string {
+  return String.fromCharCode(65 + (i % 26));
+}
+
+const PLACEHOLDERS = ["e.g. London Kings Cross", "e.g. Edinburgh"];
+
+function SlotRow({
+  label,
+  placeholder,
+  entries,
+  value,
+  onChange,
+  onRemove,
+}: {
+  label: string;
+  placeholder: string;
+  entries: Entry[];
+  value: Entry | null;
+  onChange: (e: Entry | null) => void;
+  onRemove?: () => void;
+}) {
+  if (!onRemove) {
+    return (
+      <Combobox
+        label={label}
+        placeholder={placeholder}
+        entries={entries}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
+  return (
+    <div className="slot-row">
+      <Combobox
+        label={label}
+        placeholder={placeholder}
+        entries={entries}
+        value={value}
+        onChange={onChange}
+      />
+      <button
+        type="button"
+        className="slot-remove"
+        onClick={onRemove}
+        aria-label={`Remove ${label}`}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 export default function TrainMeet({
   stations,
   services,
@@ -358,13 +433,15 @@ export default function TrainMeet({
   stations: Stations;
   services: Services;
 }) {
-  const [from, setFrom] = useState<Entry | null>(null);
-  const [to, setTo] = useState<Entry | null>(null);
+  const idCounter = useRef(2);
+  const [slots, setSlots] = useState<Slot[]>([
+    { id: "slot-0", value: null },
+    { id: "slot-1", value: null },
+  ]);
   const [maxChanges, setMaxChanges] = useState(1);
 
   const [submitted, setSubmitted] = useState<{
-    from: Entry;
-    to: Entry;
+    inputs: Entry[];
     maxChanges: number;
     result: Result;
   } | null>(null);
@@ -385,40 +462,60 @@ export default function TrainMeet({
     [stations],
   );
 
+  const setSlotValue = (idx: number, value: Entry | null) => {
+    setSlots((s) =>
+      s.map((slot, i) => (i === idx ? { ...slot, value } : slot)),
+    );
+  };
+
+  const addSlot = () => {
+    setSlots((s) => [
+      ...s,
+      { id: `slot-${idCounter.current++}`, value: null },
+    ]);
+  };
+
+  const removeSlot = (idx: number) => {
+    setSlots((s) => (s.length <= 2 ? s : s.filter((_, i) => i !== idx)));
+  };
+
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!from || !to) {
-      setValidationMessage("Pick a station from the dropdown for both fields.");
+    const filled = slots.map((s) => s.value);
+    if (filled.some((v) => v === null)) {
+      setValidationMessage("Pick a station from the dropdown for every field.");
       setSubmitted(null);
       return;
     }
-    if (from.crs === to.crs) {
-      setValidationMessage("Pick two different stations.");
+    const inputs = filled as Entry[];
+    const crses = inputs.map((v) => v.crs);
+    if (new Set(crses).size !== crses.length) {
+      setValidationMessage("Pick different stations for each field.");
       setSubmitted(null);
       return;
     }
     setValidationMessage(null);
-    const result = findMeetingPoints(stations, services, from.crs, to.crs, maxChanges);
-    setSubmitted({ from, to, maxChanges, result });
+    const result = findMeetingPoints(stations, services, crses, maxChanges);
+    setSubmitted({ inputs, maxChanges, result });
   };
 
   return (
     <>
       <form onSubmit={onSubmit}>
-        <Combobox
-          label="Station A"
-          placeholder="e.g. London Kings Cross"
-          entries={entries}
-          value={from}
-          onChange={setFrom}
-        />
-        <Combobox
-          label="Station B"
-          placeholder="e.g. Edinburgh"
-          entries={entries}
-          value={to}
-          onChange={setTo}
-        />
+        {slots.map((slot, idx) => (
+          <SlotRow
+            key={slot.id}
+            label={`Station ${letter(idx)}`}
+            placeholder={PLACEHOLDERS[idx] ?? ""}
+            entries={entries}
+            value={slot.value}
+            onChange={(v) => setSlotValue(idx, v)}
+            onRemove={slots.length > 2 ? () => removeSlot(idx) : undefined}
+          />
+        ))}
+        <button type="button" className="add-station" onClick={addSlot}>
+          + Add station
+        </button>
         <div className="field">
           <label htmlFor="max-changes">Max changes each</label>
           <select

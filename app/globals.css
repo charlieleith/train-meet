@@ -117,6 +117,35 @@ button {
 }
 button:hover { background: var(--accent-hover); }
 
+.slot-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+.slot-remove {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.85rem;
+  font-size: 1rem;
+  font-weight: normal;
+  cursor: pointer;
+  align-self: end;
+}
+.slot-remove:hover { background: #f1f4f9; color: var(--fg); border-color: var(--accent); }
+
+.add-station {
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--border);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  justify-self: start;
+}
+.add-station:hover { background: #eef4fb; color: var(--accent-hover); border-color: var(--accent); }
+
 #results { margin-top: 1rem; }
 
 .direct { color: var(--direct); font-size: 1.05rem; }
